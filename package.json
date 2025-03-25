@@ -1,59 +1,59 @@
 {
-	"name": "koishi-plugin-fate",
-	"description": "A koishi plugin for fortune telling and sign in.",
-	"version": "0.5.1",
-	"main": "lib/index.js",
-	"typings": "lib/index.d.ts",
-	"files": [
-		"lib",
-		"dist"
-	],
-	"koishi": {
-		"description": {
-			"en": "based on jrys-fix, optimized the code structure, and implemented some new features.",
-			"zh": "基于jrys-fix开发，优化了代码结构，实现一些新功能。"
-		},
-		"service": {
-			"required": [
-				"puppeteer",
-				"database",
-				"monetary"
-			]
-		}
-	},
-	"author": {
-		"name": "rumble",
-		"email": "bilirumble@outlook.com",
-		"url": "https://github.com/bilirumble"
-	},
-	"homepage": "https://github.com/bilirumble/koishi-plugin-fate",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/bilirumble/koishi-plugin-fate.git"
-	},
-	"contributors": [
-		"bilirumble <bilirumble@outlook.com>",
-		"NayKoishi <nyakoishi@qq.com>",
-		"axlmly <Unknown>"
-	],
-	"bugs": {
-		"url": "https://github.com/bilirumble/koishi-plugin-fate/issues"
-	},
-	"license": "MIT",
-	"keywords": [
-		"chatbot",
-		"koishi",
-		"plugin",
-		"运势",
-		"sign in",
-		"签到"
-	],
-	"peerDependencies": {
-		"koishi": "^4.18.0"
-	},
-	"devDependencies": {
-		"database": "^0.0.2",
-		"monetary": "^0.0.0",
-		"puppeteer": "^24.4.0"
-	}
+  "name": "koishi-plugin-fate",
+  "description": "A koishi plugin for fortune telling and sign in.",
+  "version": "1.0.0-alpha.0",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "koishi": {
+    "description": {
+      "en": "based on jrys-fix, optimized the code structure, and implemented some new features.",
+      "zh": "基于jrys-fix开发，优化了代码结构，实现一些新功能。"
+    },
+    "service": {
+      "required": [
+        "puppeteer",
+        "database",
+        "monetary"
+      ]
+    }
+  },
+  "author": {
+    "name": "rumble",
+    "email": "bilirumble@outlook.com",
+    "url": "https://github.com/bilirumble"
+  },
+  "homepage": "https://github.com/bilirumble/koishi-plugin-fate",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bilirumble/koishi-plugin-fate.git"
+  },
+  "contributors": [
+    "bilirumble <bilirumble@outlook.com>",
+    "NayKoishi <nyakoishi@qq.com>",
+    "axlmly <Unknown>"
+  ],
+  "bugs": {
+    "url": "https://github.com/bilirumble/koishi-plugin-fate/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin",
+    "运势",
+    "sign in",
+    "签到"
+  ],
+  "peerDependencies": {
+    "koishi": "^4.18.0"
+  },
+  "devDependencies": {
+    "database": "^0.0.2",
+    "monetary": "^0.0.0",
+    "puppeteer": "^24.4.0"
+  }
 }
