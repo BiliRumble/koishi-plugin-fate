@@ -133,7 +133,7 @@ export function registerCommands(ctx: Context, config: Config) {
         </div>
 
         <div class="content">
-            <div class="signin"><strong>${name}</strong> ${sign.status === 1 ? '今天已经签到过了！' : '签到成功！ 🫧+${sign.getExp} 🪙+${sign.getCoin}'}</div>
+            <div class="signin"><strong>${name}</strong> ${sign.status === 1 ? '今天已经签到过了！' : '签到成功！ 🫧+' + sign.getExp + '🪙+' + sign.getCoin}</div>
 
             <div class="level">
                 <span style="color: ${levelinfo.levelInfo.levelColor};">${levelinfo.levelInfo.levelName}</span>

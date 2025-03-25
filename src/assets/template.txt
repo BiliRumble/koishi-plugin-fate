@@ -6,17 +6,17 @@
     <title>Document</title>
     <style>
         @font-face {
-            font-family: 'emoji';
-            src: url("notoemoji.subset.woff2") format("woff2");
+          font-family: 'emoji';
+          src: url("NotoColorEmoji.ttf") format("truetype");
         }
 
         @font-face {
-            font-family: 'osans4';
-            src: url("osans4.subset.woff2") format("woff2");
+          font-family: 'notosans';
+          src: url("NotoSansRegular.ttf") format("truetype");
         }
 
         body {
-            font-family: osans4, emoji, Arial, sans-serif;
+          font-family: notosans, emoji, Arial, sans-serif;
         }
 
         .container {
