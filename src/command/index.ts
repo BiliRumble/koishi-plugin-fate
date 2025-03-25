@@ -110,7 +110,7 @@ export function registerCommands(ctx: Context, config: Config) {
 			let page: Page;
 			try {
 				let templateHTML = fs.readFileSync(
-					path.resolve(__dirname, '../assets/template.txt'),
+					path.resolve(__dirname, './assets/template.txt'),
 					'utf-8'
 				);
 
@@ -173,13 +173,13 @@ export function registerCommands(ctx: Context, config: Config) {
 </html>`;
 
 				await fs.writeFileSync(
-					path.resolve(__dirname, '../assets/index.html'),
+					path.resolve(__dirname, './assets/index.html'),
 					templateHTML + pageBody
 				);
 
 				page = await ctx.puppeteer.page();
 				await page.setViewport({ width: 600, height: 1080 * 2 });
-				await page.goto(`file:///${path.resolve(__dirname, '../assets/index.html')}`);
+				await page.goto(`file:///${path.resolve(__dirname, './assets/index.html')}`);
 				await page.waitForSelector('#body');
 				const element = await page.$('#body');
 				let msg;
