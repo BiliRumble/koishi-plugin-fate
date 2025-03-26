@@ -37,3 +37,25 @@ export interface SigninResult {
 	signTime: Date;
 	count: number;
 }
+
+export interface TemplateData {
+	isNight: boolean;
+	bgUrl: string;
+	avatarUrl: string;
+	greeting: string;
+	dateString: string;
+	username: string;
+	signStatus: number;
+	expGained: number;
+	coinGained: number;
+	levelColor: string;
+	levelName: string;
+	currentExp: number;
+	nextLevelExp: number | string;
+	progressPercent: string;
+	luckValue: number;
+	luckDescription: string;
+	hitokoto: string;
+	goodActions: string[];
+	badActions: string[];
+}
