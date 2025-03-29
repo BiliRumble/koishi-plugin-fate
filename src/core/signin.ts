@@ -14,7 +14,7 @@ declare module 'koishi' {
 
 export class SigninService {
 	public ctx: Context;
-	public cfg: any;
+	public cfg: Config;
 	constructor(context: Context, config: Config) {
 		this.ctx = context;
 		this.cfg = config;

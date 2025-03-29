@@ -12,19 +12,24 @@ import { fetchHitokoto } from '../utils/external';
 import { pathToFileURL } from 'url';
 import { getFolderImg } from '../utils/files';
 
+const templateHTML = fs.readFileSync(path.resolve(__dirname, './assets/template.txt'), 'utf-8');
+let pagePool: Page[] = [];
+const MAX_POOL_SIZE = 5;
+
+async function initPagePool(ctx: Context) {
+  const browser = ctx.puppeteer.browser
+  pagePool = await Promise.all(
+      Array.from({ length: MAX_POOL_SIZE }, () => browser.newPage())
+  )
+}
+
 export function registerFortuneCommand(
 	ctx: Context,
 	config: Config,
 	signin: SigninService,
 	jrys: Fate
 ) {
-	let eventJson: RollEvent[] = [];
-	defaultEventJson.forEach((item) => {
-		eventJson.push(item);
-	});
-	config.event.forEach((item) => {
-		eventJson.push(item);
-	});
+	const eventJson = [...defaultEventJson, ...config.event];
 
 	ctx.command('jrys', '今日运势')
 		.userFields(['id', 'name'])
@@ -37,8 +42,8 @@ export function registerFortuneCommand(
 			}
 			name = name.length > 13 ? name.substring(0, 12) + '...' : name;
 
-			const luck = await jrys.getFortune(session.user.id); //运势值
-			const sign = await signin.callSignin(session.user.id, session.author.id, luck);
+        const luck = await jrys.getFortune(session.user.id);
+        const sign = await signin.callSignin(session.user.id, session.author.id, luck);
 
 			const month = (date.getMonth() + 1).toString().padStart(2, '0'); // 确保月份为两位数
 			const day = date.getDate().toString().padStart(2, '0'); // 确保日期为两位数
@@ -75,13 +80,7 @@ export function registerFortuneCommand(
 			const gooddo = `${gooddo1.name}——${gooddo1.good}<br>${gooddo2.name}——${gooddo2.good}`;
 			const baddo = `${baddo1.name}——${baddo1.bad}<br>${baddo2.name}——${baddo2.bad}`;
 
-			let page: Page;
 			try {
-				let templateHTML = fs.readFileSync(
-					path.resolve(__dirname, './assets/template.txt'),
-					'utf-8'
-				);
-
 				let pageBody = `
 <body id="body" ${isNight ? 'class="dark-mode"' : ''}>
     <div class="container">
@@ -145,8 +144,12 @@ export function registerFortuneCommand(
 					templateHTML + pageBody
 				);
 
-				page = await ctx.puppeteer.page();
-				await page.setViewport({ width: 600, height: 1080 * 2 });
+				// 初始化池（在apply函数或首次调用时初始化）
+        if (pagePool.length === 0) await initPagePool(ctx);
+
+        // 从池中获取页面
+        const page = pagePool.pop() || await ctx.puppeteer.page();
+        await page.setViewport({ width: 600, height: 1080 * 2 });
 				await page.goto(`file:///${path.resolve(__dirname, './assets/index.html')}`);
 				await page.waitForSelector('#body');
 				const element = await page.$('#body');
@@ -160,7 +163,8 @@ export function registerFortuneCommand(
 					msg = 'Failed to capture screenshot.';
 				}
 				// 关闭页面
-				await page.close();
+				await page.goto('about:blank');
+        pagePool.push(page);
 				// 返回消息
 				return h.quote(session.event.message.id) + msg;
 			} catch (err) {
