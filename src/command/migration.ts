@@ -32,7 +32,7 @@ export function registerMigrationCommand(ctx: Context) {
 						}
 					);
 				}
-        return `迁移成功！`;
+				return `迁移成功！`;
 			} catch (error) {
 				logger.error(error);
 				return '服务内部错误，请联系管理员。';

@@ -165,47 +165,91 @@
         }
     </style>
     <style>
-      body.dark-mode {
+      body.darkMode {
         background-color: #181a1b;
         color: #e8e6e3;
       }
 
-      body.dark-mode .date {
+      body.darkMode .date {
         background: #3333339f;
         color: #a8a095;
         box-shadow: 0px 0px 5px #000000;
       }
 
-      body.dark-mode .date .greeting {
+      body.darkMode .date .greeting {
         color: #e8e6e3;
       }
 
-      body.dark-mode .hitokoto {
+      body.darkMode .hitokoto {
         color: #b0b0b0;
       }
 
-      body.dark-mode .signin {
+      body.darkMode .signin {
         color: #b0b0b0;
       }
 
-      body.dark-mode .level-bar .bar-container {
+      body.darkMode .level-bar .bar-container {
         background: #2a2d2f;
       }
 
-      body.dark-mode .level-bar .progress {
+      body.darkMode .level-bar .progress {
         background: #4d5356;
       }
 
-      body.dark-mode .fortune span:last-child {
+      body.darkMode .fortune span:last-child {
         color: #8f877b;
       }
 
-      body.dark-mode .Cando p {
+      body.darkMode .Cando p {
         color: #e0e0e0;
       }
 
-      body.dark-mode .credit {
+      body.darkMode .credit {
         color: #707070;
       }
     </style>
 </head>
+<body id="body" class="${bodyClass}">
+    <div class="container">
+        <img style="width: 100%; max-height: 340px; object-fit: cover;" src="${bgUrl}" alt="Top Image">
+        <div class="header">
+            <img class="avatar" src="${avatarUrl}" alt="Avatar">
+            <div class="date">
+                <span class="greeting">${greeting}</span>
+                <span style="color: #666666;">${date}</span>
+            </div>
+        </div>
+        <div class="hitokoto">
+            <p>${hitokoto}</p>
+        </div>
+        <div class="content">
+            <div class="signin"><strong>${name}</strong> ${signStatus}</div>
+            <div class="level">
+                <span style="color: ${levelColor};">${levelName}</span>
+                <span style="color: #b4b1b1;">${exp}</span>
+            </div>
+            <div class="level-bar">
+                <div class="bar-container">
+                    <div class="progress" style="width: calc(${expPercent}%);"></div>
+                </div>
+            </div>
+            <div class="fortune">
+                <span style="font-size: 36px; font-weight: bold;">🍀${luckValue}</span>
+                <span style="font-size: 28px; color: #838383;">🌠${luckDescription}</span>
+            </div>
+            <hr>
+            <div class="Cando">
+                <div class="background" style="background-color: #D4473D;"><span>宜</span></div>
+                <p style="text-shadow: 0px 0px 1px #ffbbbb;">${gooddo}</p>
+            </div>
+            <div class="Cando">
+                <div class="background" style="background-color: #000000;"><span>忌</span></div>
+                <p style="text-shadow: 0px 0px 1px #bcdbff;">${baddo}</p>
+            </div>
+        </div>
+        <div class="credit">
+            随机生成 请勿迷信
+        </div>
+    </div>
+</body>
+</html>

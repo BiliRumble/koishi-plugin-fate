@@ -13,14 +13,31 @@ import { pathToFileURL } from 'url';
 import { getFolderImg } from '../utils/files';
 
 const templateHTML = fs.readFileSync(path.resolve(__dirname, './assets/template.txt'), 'utf-8');
+// 获取标准化资源基准路径
+const baseDir = path.resolve(__dirname, './assets');
+const baseURL = new URL(`file://${baseDir}/`).href; // 确保结尾斜杠
+
 let pagePool: Page[] = [];
 const MAX_POOL_SIZE = 5;
 
+// 路径解析系统
+function resolveAsset(relativePath: string) {
+	return new URL(relativePath, baseURL).href;
+}
+
 async function initPagePool(ctx: Context) {
-  const browser = ctx.puppeteer.browser
-  pagePool = await Promise.all(
-      Array.from({ length: MAX_POOL_SIZE }, () => browser.newPage())
-  )
+	const browser = ctx.puppeteer.browser;
+	pagePool = await Promise.all(
+		Array.from({ length: MAX_POOL_SIZE }, async () => {
+			const page = await browser.newPage();
+			await page.setViewport({ width: 600, height: 1080 * 2 });
+
+			// 预加载基础环境
+			await page.goto(baseURL); // 导航到基准路径
+			await page.evaluate(() => (document.body.innerHTML = '')); // 清空初始内容
+			return page;
+		})
+	);
 }
 
 export function registerFortuneCommand(
@@ -42,20 +59,19 @@ export function registerFortuneCommand(
 			}
 			name = name.length > 13 ? name.substring(0, 12) + '...' : name;
 
-        const luck = await jrys.getFortune(session.user.id);
-        const sign = await signin.callSignin(session.user.id, session.author.id, luck);
+			const luck = await jrys.getFortune(session.user.id);
+			const sign = await signin.callSignin(session.user.id, session.author.id, luck);
 
-			const month = (date.getMonth() + 1).toString().padStart(2, '0'); // 确保月份为两位数
-			const day = date.getDate().toString().padStart(2, '0'); // 确保日期为两位数
-			const luckInfo = signin.getFortuneInfo(luck, config.fortuneSet); // 运势描述
+			const month = (date.getMonth() + 1).toString().padStart(2, '0');
+			const day = date.getDate().toString().padStart(2, '0');
+			const luckInfo = signin.getFortuneInfo(luck, config.fortuneSet);
 			const [gooddo1, gooddo2, baddo1, baddo2] = await jrys.getRandomObjects(
 				eventJson,
 				session.user.id
-			); // 4*宜/不宜
-			const hitokoto = await fetchHitokoto(); // 一言
-			const greeting = signin.getGreeting(date.getHours()); // 问候
-			const isNight = date.getHours() >= 18 || date.getHours() < 6;
-			const levelinfo = signin.getLevelInfo(sign.allExp, config.levelSet); //等级信息
+			);
+			const hitokoto = await fetchHitokoto();
+			const greeting = signin.getGreeting(date.getHours());
+			const levelinfo = signin.getLevelInfo(sign.allExp, config.levelSet);
 			const percent =
 				typeof levelinfo.nextExp == 'string'
 					? '100.000'
@@ -77,96 +93,81 @@ export function registerFortuneCommand(
 			if (avatarUrl == undefined) {
 				avatarUrl = 'avatar.png';
 			}
-			const gooddo = `${gooddo1.name}——${gooddo1.good}<br>${gooddo2.name}——${gooddo2.good}`;
-			const baddo = `${baddo1.name}——${baddo1.bad}<br>${baddo2.name}——${baddo2.bad}`;
 
 			try {
-				let pageBody = `
-<body id="body" ${isNight ? 'class="dark-mode"' : ''}>
-    <div class="container">
+				const content = templateHTML
+					.replace(
+						'${bodyClass}',
+						date.getHours() >= 18 || date.getHours() < 6 ? 'darkMode' : ''
+					)
+					.replace('${bgUrl}', bgUrl)
+					.replace('${avatarUrl}', avatarUrl)
+					.replace('${greeting}', greeting)
+					.replace('${date}', `${month}/${day}`)
+					.replace('${hitokoto}', hitokoto)
+					.replace('${name}', name)
+					.replace(
+						'${signStatus}',
+						sign.status === 1
+							? '今天已经签到过了！'
+							: '签到成功！ 🫧+' + sign.getExp + '🪙+' + sign.getCoin
+					)
+					.replace('${levelColor}', levelinfo.levelInfo.levelColor)
+					.replace('${levelName}', levelinfo.levelInfo.levelName)
+					.replace('${exp}', `${sign.allExp}/${levelinfo.nextExp}`)
+					.replace('${expPercent}', percent)
+					.replace('${luckValue}', luck.toString())
+					.replace('${luckDescription}', luckInfo)
+					.replace(
+						'${gooddo}',
+						`${gooddo1.name}——${gooddo1.good}<br>${gooddo2.name}——${gooddo2.good}`
+					)
+					.replace(
+						'${baddo}',
+						`${baddo1.name}——${baddo1.bad}<br>${baddo2.name}——${baddo2.bad}`
+					);
 
-        <img style="width: 100%;" src="${bgUrl}" alt="Top Image">
+				console.debug(content);
 
-        <div class="header">
-            <img class="avatar" src="${avatarUrl}" alt="Avatar">
-            <div class="date">
-                <span class="greeting">${greeting}</span>
-                <span style="color: #666666;">${month}/${day}</span>
-            </div>
-        </div>
+				if (pagePool.length === 0) await initPagePool(ctx);
+				let page: Page;
+				try {
+					page = pagePool.pop() || (await ctx.puppeteer.browser.newPage());
 
-        <div class="hitokoto">
-            <p>${hitokoto}</p>
-        </div>
+					// 通过设置基准URL来加载本地资源
+					await page.goto(baseURL);
+					await page.setContent(content, {
+						waitUntil: 'networkidle0',
+					});
 
-        <div class="content">
-            <div class="signin"><strong>${name}</strong> ${sign.status === 1 ? '今天已经签到过了！' : '签到成功！ 🫧+' + sign.getExp + '🪙+' + sign.getCoin}</div>
+					await page.waitForSelector('#body', { timeout: 30000 });
+					const element = await page.$('#body');
 
-            <div class="level">
-                <span style="color: ${levelinfo.levelInfo.levelColor};">${levelinfo.levelInfo.levelName}</span>
-                <span style="color: #b4b1b1;">${sign.allExp}/${levelinfo.nextExp}</span>
-            </div>
+					let msg;
+					if (!element) {
+						msg = null;
+						throw new Error('Element not found');
+					}
 
-            <div class="level-bar">
-                <div class="bar-container">
-                    <div class="progress" style="width: calc(${percent}%);"></div>
-                </div>
-            </div>
-
-            <div class="fortune">
-                <span style="font-size: 36px; font-weight: bold;">🍀${luck}</span>
-                <span style="font-size: 28px; color: #838383;">🌠${luckInfo}</span>
-            </div>
-
-            <hr>
-
-            <div class="Cando">
-                <div class="background" style="background-color: #D4473D;"><span>宜</span></div>
-                <p style="text-shadow: 0px 0px 1px #ffbbbb;">${gooddo}</p>
-            </div>
-
-            <div class="Cando">
-                <div class="background" style="background-color: #000000;"><span>忌</span></div>
-                <p style="text-shadow: 0px 0px 1px #bcdbff;">${baddo}</p>
-            </div>
-
-        </div>
-        <div class="credit">
-            随机生成 请勿迷信
-        </div>
-    </div>
-</body>
-
-</html>`;
-
-				await fs.writeFileSync(
-					path.resolve(__dirname, './assets/index.html'),
-					templateHTML + pageBody
-				);
-
-				// 初始化池（在apply函数或首次调用时初始化）
-        if (pagePool.length === 0) await initPagePool(ctx);
-
-        // 从池中获取页面
-        const page = pagePool.pop() || await ctx.puppeteer.page();
-        await page.setViewport({ width: 600, height: 1080 * 2 });
-				await page.goto(`file:///${path.resolve(__dirname, './assets/index.html')}`);
-				await page.waitForSelector('#body');
-				const element = await page.$('#body');
-				let msg;
-				if (element) {
 					const imgBuf = await element.screenshot({
 						encoding: 'binary',
 					});
 					msg = h.image(imgBuf, 'image/png');
-				} else {
-					msg = 'Failed to capture screenshot.';
+
+					return h.quote(session.event.message.id) + msg;
+				} finally {
+					if (page) {
+						await page.evaluate(() => {
+							document.body.innerHTML = '';
+							window.scrollTo(0, 0);
+						});
+						if (pagePool.length < MAX_POOL_SIZE) {
+							pagePool.push(page);
+						} else {
+							await page.close();
+						}
+					}
 				}
-				// 关闭页面
-				await page.goto('about:blank');
-        pagePool.push(page);
-				// 返回消息
-				return h.quote(session.event.message.id) + msg;
 			} catch (err) {
 				logger.error(err);
 				return '服务内部错误，请联系管理员。';
