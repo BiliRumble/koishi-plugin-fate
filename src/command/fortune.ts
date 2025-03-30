@@ -6,39 +6,12 @@ import fs from 'fs';
 import path from 'path';
 import {} from 'koishi-plugin-puppeteer';
 import { Config } from './types';
-import { logger, RollEvent } from '..';
+import { logger } from '..';
 import { defaultEventJson } from '../data/defaults';
 import { fetchHitokoto } from '../utils/external';
 import { pathToFileURL } from 'url';
 import { getFolderImg } from '../utils/files';
-
-const templateHTML = fs.readFileSync(path.resolve(__dirname, './assets/template.txt'), 'utf-8');
-// 获取标准化资源基准路径
-const baseDir = path.resolve(__dirname, './assets');
-const baseURL = new URL(`file://${baseDir}/`).href; // 确保结尾斜杠
-
-let pagePool: Page[] = [];
-const MAX_POOL_SIZE = 5;
-
-// 路径解析系统
-function resolveAsset(relativePath: string) {
-	return new URL(relativePath, baseURL).href;
-}
-
-async function initPagePool(ctx: Context) {
-	const browser = ctx.puppeteer.browser;
-	pagePool = await Promise.all(
-		Array.from({ length: MAX_POOL_SIZE }, async () => {
-			const page = await browser.newPage();
-			await page.setViewport({ width: 600, height: 1080 * 2 });
-
-			// 预加载基础环境
-			await page.goto(baseURL); // 导航到基准路径
-			await page.evaluate(() => (document.body.innerHTML = '')); // 清空初始内容
-			return page;
-		})
-	);
-}
+import { disposeBrowserPool, initBrowserPool, MAX_POOL_SIZE } from '../utils/puppeteer';
 
 export function registerFortuneCommand(
 	ctx: Context,
@@ -47,6 +20,21 @@ export function registerFortuneCommand(
 	jrys: Fate
 ) {
 	const eventJson = [...defaultEventJson, ...config.event];
+	const templateHTML = fs.readFileSync(
+		path.resolve(__dirname, ctx.state.baseDir, 'template.txt'),
+		'utf-8'
+	);
+	ctx.on('ready', async () => {
+		if (!ctx.state.browserPool) {
+			ctx.state.browserPool = await initBrowserPool(ctx);
+		}
+	});
+	ctx.on('dispose', async () => {
+		if (ctx.state.browserPool) {
+			await disposeBrowserPool(ctx.state.browserPool);
+			ctx.state.browserPool = null;
+		}
+	});
 
 	ctx.command('jrys', '今日运势')
 		.userFields(['id', 'name'])
@@ -127,15 +115,13 @@ export function registerFortuneCommand(
 						`${baddo1.name}——${baddo1.bad}<br>${baddo2.name}——${baddo2.bad}`
 					);
 
-				console.debug(content);
-
-				if (pagePool.length === 0) await initPagePool(ctx);
 				let page: Page;
-				try {
-					page = pagePool.pop() || (await ctx.puppeteer.browser.newPage());
 
-					// 通过设置基准URL来加载本地资源
-					await page.goto(baseURL);
+				try {
+					if (!ctx.state.browserPool) {
+						ctx.state.browserPool = await initBrowserPool(ctx);
+					}
+					page = ctx.state.browserPool.pop();
 					await page.setContent(content, {
 						waitUntil: 'networkidle0',
 					});
@@ -161,8 +147,8 @@ export function registerFortuneCommand(
 							document.body.innerHTML = '';
 							window.scrollTo(0, 0);
 						});
-						if (pagePool.length < MAX_POOL_SIZE) {
-							pagePool.push(page);
+						if (ctx.state.browserPool.length < MAX_POOL_SIZE) {
+							ctx.state.browserPool.push(page);
 						} else {
 							await page.close();
 						}
