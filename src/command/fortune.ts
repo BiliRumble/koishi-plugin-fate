@@ -11,7 +11,6 @@ import { defaultEventJson } from '../data/defaults';
 import { fetchHitokoto } from '../utils/external';
 import { pathToFileURL } from 'url';
 import { getFolderImg } from '../utils/files';
-import { disposeBrowserPool, initBrowserPool, MAX_POOL_SIZE } from '../utils/puppeteer';
 
 export function registerFortuneCommand(
 	ctx: Context,
@@ -24,17 +23,6 @@ export function registerFortuneCommand(
 		path.resolve(__dirname, ctx.state.baseDir, 'template.txt'),
 		'utf-8'
 	);
-	ctx.on('ready', async () => {
-		if (!ctx.state.browserPool) {
-			ctx.state.browserPool = await initBrowserPool(ctx);
-		}
-	});
-	ctx.on('dispose', async () => {
-		if (ctx.state.browserPool) {
-			await disposeBrowserPool(ctx.state.browserPool);
-			ctx.state.browserPool = null;
-		}
-	});
 
 	ctx.command('jrys', '今日运势')
 		.userFields(['id', 'name'])
@@ -118,10 +106,10 @@ export function registerFortuneCommand(
 				let page: Page;
 
 				try {
-					if (!ctx.state.browserPool) {
-						ctx.state.browserPool = await initBrowserPool(ctx);
-					}
-					page = ctx.state.browserPool.pop();
+          page = await ctx.puppeteer.browser.newPage();
+          await page.setViewport({ width: 600, height: 1080 * 2 });
+          await page.goto(ctx.state.baseURL);
+          await page.evaluate(() => (document.body.innerHTML = ''));
 					await page.setContent(content, {
 						waitUntil: 'networkidle0',
 					});
@@ -142,17 +130,7 @@ export function registerFortuneCommand(
 
 					return h.quote(session.event.message.id) + msg;
 				} finally {
-					if (page) {
-						await page.evaluate(() => {
-							document.body.innerHTML = '';
-							window.scrollTo(0, 0);
-						});
-						if (ctx.state.browserPool.length < MAX_POOL_SIZE) {
-							ctx.state.browserPool.push(page);
-						} else {
-							await page.close();
-						}
-					}
+					if (page) page.close();
 				}
 			} catch (err) {
 				logger.error(err);

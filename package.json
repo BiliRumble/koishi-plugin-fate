@@ -1,7 +1,7 @@
 {
 	"name": "koishi-plugin-fate",
 	"description": "A koishi plugin for fortune telling and sign in.",
-	"version": "1.0.0-beta.3",
+	"version": "1.0.0-beta.3.hotfix",
 	"main": "lib/index.js",
 	"typings": "lib/index.d.ts",
 	"files": [
